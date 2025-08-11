@@ -1,13 +1,21 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/userschema');
+const verifyToken=require('../middleware/authmiddleware')
+
+// Apply to all routes in verifyToken
+router.use(verifyToken)
 
 // GET all users
 router.get('/', async (req, res) => {
   try {
-    const users = await User.find();
-    console.log('📦 Sending user list:', users.length);
-    res.status(200).json(users);
+    const users = await User.find().lean();
+    const responseuserslist = users.map((user)=>{
+      const {password,...rest}=user
+      return rest;
+    })
+    console.log('📦 Sending user list:', responseuserslist.length);
+    res.status(200).json(responseuserslist);
   } catch (error) {
     console.error('❌ Error fetching users:', error);
     res.status(500).json({ message: 'Error fetching users', error: error.message });
@@ -16,11 +24,19 @@ router.get('/', async (req, res) => {
 
 // Get User By ID 
 
-router.get('/:id',async (req,res)=>{
+router.get('/id', async (req, res) => {
   try {
-    const userid=req.query.id
-    const userdata=await User.findbyId(userid)
-    res.status(200).json(userdata)
+    console.log(req.query)
+    const userid = req.query.id
+    const userdata = await User.findById(userid)
+    const responseuser = {
+      name: userdata.name,
+      age: userdata.age,
+      role: userdata.role,
+      phonumber: userdata.phonumber,
+      username: userdata.username,
+    }
+    res.status(200).json(responseuser)
   } catch (error) {
     console.error('❌ Error fetching user:', error);
     res.status(500).json({ message: 'Error fetching user', error: error.message });
@@ -30,10 +46,8 @@ router.get('/:id',async (req,res)=>{
 // CREATE user
 router.post('/', async (req, res) => {
   try {
-    console.log('👉 Creating user with data:', req.body); // debug log
     const newUser = new User(req.body);
     const savedUser = await newUser.save();
-    console.log('✅ User created:', savedUser);
     res.status(201).json({ message: 'User created successfully', data: savedUser });
   } catch (error) {
     console.error('❌ Error creating user:', error);
@@ -44,7 +58,7 @@ router.post('/', async (req, res) => {
 
 
 // Update user
-router.put('/:id', async (req, res) => {
+router.put('/id', async (req, res) => {
   try {
     const userId = req.params.id;  // get ID from route parameter
     const updatedData = req.body;  // get update fields from request body
@@ -67,9 +81,10 @@ router.put('/:id', async (req, res) => {
 
 
 // deleteuser 
-router.delete('/:id', async (req, res) => {
+router.delete('/id', async (req, res) => {
   try {
-    const userId = req.params.id;
+    console.log(req.query)
+    const userId = req.query.id;
     console.log(`🗑️ Deleting user with ID: ${userId}`);
     const deletedUser = await User.findByIdAndDelete(userId);
     if (!deletedUser) {
