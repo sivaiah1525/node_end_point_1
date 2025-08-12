@@ -5,7 +5,8 @@ require('dotenv').config();
 const router = express.Router();
 
 // Import your User mongoose model
-const User = require('../models/userschema'); 
+const { User, Register } = require('../models/userschema');
+
 
 // Register Route
 router.post('/register', async (req, res) => {
@@ -16,14 +17,14 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ message: 'Username and password are required' });
         }
 
-        const existingUser = await User.findOne({ username });
+        const existingUser = await Register.findOne({ username });
         if (existingUser) {
             return res.status(400).json({ message: 'User already exists' });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        const newUser = new User({
+        const newUser = new Register({
             name,
             age,
             role,
@@ -50,7 +51,7 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ message: 'Username and password are required' });
         }
 
-        const user = await User.findOne({ username });
+        const user = await Register.findOne({ username });
         if (!user) {
             return res.status(400).json({ message: 'User not found' });
         }

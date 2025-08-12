@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const User = require('../models/userschema');
+const { User, Register } = require('../models/userschema');
+
 const verifyToken=require('../middleware/authmiddleware')
 
 // Apply to all routes in verifyToken
@@ -50,8 +51,16 @@ router.post('/', async (req, res) => {
     const savedUser = await newUser.save();
     res.status(201).json({ message: 'User created successfully', data: savedUser });
   } catch (error) {
-    console.error('❌ Error creating user:', error);
-    res.status(400).json({ message: 'Error creating user', error: error.message });
+    if(error.name === 'ValidationError') {
+      console.error('❌ Validation error:', error.message);
+      return res.status(400).json({ message: 'Validation error', errors: error.errors });
+    }
+    if(error.code===11000){
+      console.error('❌ Duplicate key error:', error.message);
+      return res.status(400).json({ message: 'email already use' });
+    }
+    res.status(500).json({ success: false, message: 'Server Error' });
+
   }
 });
 
